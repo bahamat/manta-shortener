@@ -1,0 +1,19 @@
+<html>
+<script type="text/javascript">
+    function changeImage(a) {
+        var v = a.i_text.value;
+        var qr_text='http://' + window.location.host + '/qr/' + encodeURIComponent(v);
+        document.getElementById('qr').src=qr_text;
+        document.getElementById('label').innerHTML=v;
+    }
+</script>
+<body>
+<div style="text-align: center">
+<p id="label">Hello</p>
+<form action="/" method="post">
+URL: <input id="url" name="url" type="i_text" />
+<input name="bttn" type="submit" value="Allocate i.no.de" />
+</form>
+</div>
+</body>
+</html>

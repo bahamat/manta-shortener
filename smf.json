@@ -1,0 +1,15 @@
+{
+    "ident": "manta-shortener",
+    "label": "Manta URL shortener",
+    "start": {
+        "user": "nobody", "group": "nobody",
+        "exec": "index.js",
+        "environment": {
+            "PATH": "/usr/local/sbin:/usr/local/bin:/opt/local/sbin:/opt/local/bin:/usr/sbin:/usr/bin:/sbin"
+        }
+    },
+    "stop": {
+        "timeout": 120
+    }
+}
+

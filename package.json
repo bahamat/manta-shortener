@@ -1,0 +1,18 @@
+{
+  "name": "node-shortener",
+  "version": "1.0.0",
+  "description": "URL shortening API.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Brian Bennett <brian.bennett@joyent.com>",
+  "license": "MPL-2.0",
+  "dependencies": {
+    "bunyan": "^1.8.12",
+    "djb2": "0.0.2",
+    "restify": "^6.0.1",
+    "restify-errors": "^5.0.0",
+    "smfgen": "^1.0.0"
+  }
+}
