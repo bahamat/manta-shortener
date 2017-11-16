@@ -43,29 +43,72 @@ var shorten = function (req, res, next) {
     log.trace({body: req.body, params: req.params}, 'request received');
     data[key] = url;
     log.trace({data: data}, 'All the urls now');
-    res.send({url: url, link: req.isSecure() ? 'https' : 'http'  + '://' + req.headers.host
-        + '/' + key});
+    var link = req.isSecure() ? 'https' : 'http'  + '://' + req.headers.host +
+        '/' + key;
+    res.send({url: url, link: link});
+    req.key = key;
     return next();
+};
+
+var validateKey = function (req, res, next) {
+    if (!req.params || !req.params.key) {
+        return next(new errs.NotFoundError('no short url was provided'));
+    }
+    next();
+};
+
+var loadUrl = function (req, res, next) {
+    if (!USE_MANTA_BACKEND) {
+        return next();
+    }
+
+    var key = req.params.key;
+
+    if (data[key] !== undefined) {
+        next();
+        return;
+    }
+
+    // Check if database has entry.
+    storage.loadUrl(key, function (err, entry) {
+        if (err) {
+            next(err);
+            return;
+        }
+        data[key] = entry;
+        next();
+    });
+};
+
+var validateUrl = function (req, res, next) {
+    if (!req.params || !req.params.url) {
+        return next(new errs.NotFoundError('no long url was provided'));
+    }
+    next();
 };
 
 var expand = function (req, res, next) {
     log.trace({params: req.params}, 'Expand request received');
-    if (data[req.params.key] === undefined) {
-        return next(new errs.NotFoundError('%s does not refer to a URL', req.params.key));
+    var key = req.params.key;
+    var url = data[key];
+
+    if (!url) {
+        return next(new errs.NotFoundError('%s does not refer to a URL', key));
     } else if (req.params.preview === 'true') {
-        res.send({location: data[req.params.key]});
+        res.send({location: url});
     } else {
-        return res.redirect(data[req.params.key], next);
+        return res.redirect(url, next);
     }
     return next();
 };
 
-var save = function (req, res, next) {
-    if (USE_MANTA_BACKEND) {
-        storage.save(data, next);
-    } else {
+var saveUrl = function (req, res, next) {
+    if (!USE_MANTA_BACKEND) {
         next();
+        return;
     }
+
+    storage.saveUrl(req.key, req.params.url, next);
 };
 
 var server = restify.createServer({
@@ -79,25 +122,10 @@ server.get({path: '/', version: '1.0.0'}, restify.plugins.serveStatic({
     directory: 'html',
     default: 'index.html'
 }));
-server.post({path: '/', version: '1.0.0'}, shorten, save);
-server.get({path: '/s', version: '1.0.0'}, shorten, save);
-server.get({path: '/:key', version: '1.0.0'}, expand);
+server.post({path: '/', version: '1.0.0'}, validateUrl, shorten, saveUrl);
+server.get({path: '/s', version: '1.0.0'}, shorten, saveUrl);
+server.get({path: '/:key', version: '1.0.0'}, validateKey, loadUrl, expand);
 
-function listen() {
-    server.listen(8080, '::', function () {
-        log.info('%s listening at %s', server.name, server.url);
-    });
-}
-
-if (USE_MANTA_BACKEND) {
-    storage.load(function (err, storedData) {
-        if (err) {
-            throw err;
-        }
-
-        data = storedData;
-        listen();
-    });
-} else {
-    listen();
-}
+server.listen(8080, '::', function () {
+    log.info('%s listening at %s', server.name, server.url);
+});

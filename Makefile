@@ -9,3 +9,6 @@ install: smf.xml
 
 run:
 	./index.js | bunyan
+
+check:
+	jshint index.js lib
