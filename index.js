@@ -10,6 +10,8 @@ var djb2 = require('djb2');
 var errs = require('restify-errors');
 var restify = require('restify');
 
+var store = require('./lib/store');
+
 var log = bunyan.createLogger({
     name: 'shortener',
     src: true,
@@ -19,12 +21,19 @@ var log = bunyan.createLogger({
 
 var data = {};
 
+var USE_MANTA_BACKEND = false;
+
+var storage;
+if (USE_MANTA_BACKEND) {
+    storage = new store.Storage();
+}
+
 var hash = function (s) {
     var salt = 'blarg';
     // var buf = Buffer.from(djb2(salt + s).toString());
     // return(buf.toString('base64'));
     // return(buf.toString('base64').replace(/=+$/, ''));
-    return (djb2(salt + s).toString());
+    return ((djb2(salt + s) >>> 0).toString());
 };
 
 var shorten = function (req, res, next) {
@@ -51,6 +60,14 @@ var expand = function (req, res, next) {
     return next();
 };
 
+var save = function (req, res, next) {
+    if (USE_MANTA_BACKEND) {
+        storage.save(data, next);
+    } else {
+        next();
+    }
+};
+
 var server = restify.createServer({
     log: log,
 });
@@ -62,10 +79,25 @@ server.get({path: '/', version: '1.0.0'}, restify.plugins.serveStatic({
     directory: 'html',
     default: 'index.html'
 }));
-server.post({path: '/', version: '1.0.0'}, shorten);
-server.get({path: '/s', version: '1.0.0'}, shorten);
+server.post({path: '/', version: '1.0.0'}, shorten, save);
+server.get({path: '/s', version: '1.0.0'}, shorten, save);
 server.get({path: '/:key', version: '1.0.0'}, expand);
 
-server.listen(8080, '::', function () {
-    log.info('%s listening at %s', server.name, server.url);
-});
+function listen() {
+    server.listen(8080, '::', function () {
+        log.info('%s listening at %s', server.name, server.url);
+    });
+}
+
+if (USE_MANTA_BACKEND) {
+    storage.load(function (err, storedData) {
+        if (err) {
+            throw err;
+        }
+
+        data = storedData;
+        listen();
+    });
+} else {
+    listen();
+}

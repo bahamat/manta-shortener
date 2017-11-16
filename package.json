@@ -11,6 +11,7 @@
   "dependencies": {
     "bunyan": "^1.8.12",
     "djb2": "0.0.2",
+    "manta": "^5.1.0",
     "restify": "^6.0.1",
     "restify-errors": "^5.0.0",
     "smfgen": "^1.0.0"
