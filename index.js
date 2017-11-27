@@ -11,6 +11,7 @@ var errs = require('restify-errors');
 var restify = require('restify');
 
 var store = require('./lib/store');
+var conf = require('./config');
 
 var log = bunyan.createLogger({
     name: 'shortener',
@@ -24,16 +25,47 @@ var data = {};
 var USE_MANTA_BACKEND = false;
 
 var storage;
-if (USE_MANTA_BACKEND) {
-    storage = new store.Storage();
-}
+
+var validateConfig = function (conf) {
+    var requiredKeys = [
+        "MANTA_USER",
+        "MANTA_KEY_ID",
+        "MANTA_KEY_PATH",
+        "MANTA_URL",
+        "MANTA_DIR",
+        "salt"
+    ];
+    var missingKeys = [];
+
+    conf.MANTA_USER = conf.MANTA_USER || process.env.MANTA_USER;
+    conf.MANTA_SUBUSER = conf.MANTA_SUBUSER || process.env.MANTA_SUBUSER;
+    conf.MANTA_KEY_ID = conf.MANTA_KEY_ID || process.env.MANTA_KEY_ID;
+    conf.MANTA_KEY_PATH = conf.MANTA_KEY_PATH || process.env.MANTA_KEY_PATH;
+    conf.MANTA_ROLE = conf.MANTA_ROLE || process.env.MANTA_ROLE;
+    conf.MANTA_URL = conf.MANTA_URL || process.env.MANTA_URL;
+    conf.MANTA_DIR = conf.MANTA_DIR || process.env.MANTA_DIR;
+
+    USE_MANTA_BACKEND = conf.USE_MANTA_BACKEND || USE_MANTA_BACKEND;
+
+    if (USE_MANTA_BACKEND) {
+        requiredKeys.forEach(function (item) {
+            if (conf[item] === undefined) {
+                missingKeys.push(item);
+            }
+        });
+        if (missingKeys.length > 0) {
+            log.error({conf: conf, missing: missingKeys}, 'Exiting due to missing config');
+            process.exit(1);
+        }
+    }
+    log.info({conf: conf, useManta: USE_MANTA_BACKEND}, 'Configuration');
+};
 
 var hash = function (s) {
-    var salt = 'blarg';
     // var buf = Buffer.from(djb2(salt + s).toString());
     // return(buf.toString('base64'));
     // return(buf.toString('base64').replace(/=+$/, ''));
-    return ((djb2(salt + s) >>> 0).toString());
+    return ((djb2(conf.salt + s) >>> 0).toString());
 };
 
 var shorten = function (req, res, next) {
@@ -114,6 +146,12 @@ var saveUrl = function (req, res, next) {
 var server = restify.createServer({
     log: log,
 });
+
+validateConfig(conf);
+
+if (USE_MANTA_BACKEND) {
+    storage = new store.Storage(conf);
+}
 
 server.use(restify.plugins.bodyParser({mapParams: true}));
 server.use(restify.plugins.queryParser({mapParams: true}));
