@@ -61,11 +61,20 @@ var validateConfig = function (conf) {
     log.info({conf: conf, useManta: USE_MANTA_BACKEND}, 'Configuration');
 };
 
+var unsign = function (i) {
+    // Convert a signed 32-bit negative integer to unsigned.
+    if (i < 0) {
+        // Add Math.pow(2,32)
+        i += 4294967296;
+    }
+    return i;
+};
+
 var hash = function (s) {
     // var buf = Buffer.from(djb2(salt + s).toString());
     // return(buf.toString('base64'));
     // return(buf.toString('base64').replace(/=+$/, ''));
-    return ((djb2(conf.salt + s) >>> 0).toString());
+    return (unsign(djb2(conf.salt + s)).toString());
 };
 
 var shorten = function (req, res, next) {
