@@ -60,3 +60,5 @@ typings/
 ## Local
 smf.xml
 config.json
+
+keys/id_*
