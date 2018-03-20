@@ -1,3 +1,11 @@
+.PHONY: all
+
+all: keys/id_ecdsa smf.xml
+
+keys/id_ecdsa:
+	ssh-keygen -t ecdsa -N '' -C $$(hostname) -f keys/id_ecdsa
+	chmod +r @<
+
 node_modules: package.json
 	npm install --production
 
