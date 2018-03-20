@@ -77,6 +77,11 @@ var hash = function (s) {
     return (unsign(djb2(conf.salt + s)).toString());
 };
 
+var ping = function (req, res, next) {
+    res.send({ping: "pong"});
+    return next();
+};
+
 var shorten = function (req, res, next) {
     var url = req.params.url;
     var key = hash(url);
@@ -169,6 +174,7 @@ server.get({path: '/', version: '1.0.0'}, restify.plugins.serveStatic({
     directory: 'html',
     default: 'index.html'
 }));
+server.get({path: '/--ping', version: '1.0.0'}, ping);
 server.post({path: '/', version: '1.0.0'}, validateUrl, shorten, saveUrl);
 server.get({path: '/s', version: '1.0.0'}, shorten, saveUrl);
 server.get({path: '/:key', version: '1.0.0'}, validateKey, loadUrl, expand);
