@@ -65,8 +65,8 @@ var validateConfig = function (conf) {
 var unsign = function (i) {
     // Convert a signed 32-bit negative integer to unsigned.
     if (i < 0) {
-        // Add Math.pow(2,32)
-        i += 4294967296;
+        // Add Math.pow(2,53)-1
+        i += 9007199254740991;
     }
     return i;
 };
