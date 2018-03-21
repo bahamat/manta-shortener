@@ -8,6 +8,7 @@
 var bunyan = require('bunyan');
 var djb2 = require('djb2');
 var errs = require('restify-errors');
+var forwarded = require('forwarded-parse');
 var restify = require('restify');
 
 var store = require('./lib/store');
@@ -85,12 +86,20 @@ var ping = function (req, res, next) {
 var shorten = function (req, res, next) {
     var url = req.params.url;
     var key = hash(url);
+    var proto = 'http';
+    var link;
+
+
+    if (typeof req.headers.forwarded !== 'undefined') {
+        proto = forwarded(req.headers.forwarded)[0].proto;
+    } else if (req.isSecure()) {
+        proto == 'https';
+    }
 
     log.trace({body: req.body, params: req.params}, 'request received');
     data[key] = url;
     log.trace({data: data}, 'All the urls now');
-    var link = req.isSecure() ? 'https' : 'http'  + '://' + req.headers.host +
-        '/' + key;
+    link = proto + '://' + req.headers.host + '/' + key;
     res.send({url: url, link: link});
     req.key = key;
     return next();
