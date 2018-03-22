@@ -1,12 +1,9 @@
 #!/usr/bin/env node --abort-on-uncaught-exception
 
-// Q: Why is djb2 a strong hash?
-// A: https://crypto.stackexchange.com/questions/18340/reversing-djb2-hashes
-
 'use strict';
 
 var bunyan = require('bunyan');
-var djb2 = require('djb2');
+var crypto = require('crypto');
 var errs = require('restify-errors');
 var forwarded = require('forwarded-parse');
 var restify = require('restify');
@@ -62,21 +59,13 @@ var validateConfig = function (conf) {
     log.info({conf: conf, useManta: USE_MANTA_BACKEND}, 'Configuration');
 };
 
-var unsign = function (i) {
-    // Convert a signed 32-bit negative integer to unsigned.
-    if (i < 0) {
-        // Add Math.pow(2,53)-1
-        i += 9007199254740991;
-    }
-    return i;
-};
-
 var hash = function (s) {
-    // var buf = Buffer.from(djb2(salt + s).toString());
-    // return(buf.toString('base64'));
-    // return(buf.toString('base64').replace(/=+$/, ''));
-    return (unsign(djb2(conf.salt + s)).toString());
-};
+    var sha = crypto.createHash('sha1');
+    var sum;
+    sha.update(conf.salt + s);
+    sum = sha.digest('hex');
+    return (sum.substr(0,16));
+}
 
 var ping = function (req, res, next) {
     res.send({ping: "pong"});
