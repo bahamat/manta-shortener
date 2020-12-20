@@ -7,6 +7,7 @@ var crypto = require('crypto');
 var errs = require('restify-errors');
 var forwarded = require('forwarded-parse');
 var restify = require('restify');
+var errors = require('restify-errors');
 
 var store = require('./lib/store');
 var conf = require('./config');
@@ -78,6 +79,10 @@ var shorten = function (req, res, next) {
     var proto = 'http';
     var link;
 
+    if (url == undefined) {
+        res.send(new errors.BadRequestError('No URL provided'));
+        return;
+    }
 
     if (typeof req.headers.forwarded !== 'undefined') {
         proto = forwarded(req.headers.forwarded)[0].proto;
